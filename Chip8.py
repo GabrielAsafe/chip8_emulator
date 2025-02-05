@@ -25,7 +25,7 @@ class Chip8:
         """Busca o próximo opcode (16 bits) da memória."""
         high_byte = self.memory[self.pc]  # primeiro byte(olhando o hex do programa de teste)
         low_byte = self.memory[self.pc + 1]  # segundo byte
-        opcode = (high_byte << 8) | low_byte #TODO não devia ser 16 ?? 
+        opcode = (high_byte << 8) | low_byte 
         self.pc += 2  # Incrementa o contador de programa
         return opcode
 
@@ -55,6 +55,12 @@ class Chip8:
             self.pc = nnn  # Atualiza o ponteiro do programa para o endereço nnn
 
 
+        elif nn == 0x33:  # FX33 - Armazena a representação BCD de VX em memória[I, I+1, I+2]
+            print(f"Executando FX33 - Convertendo VX ({self.registers[x]}) para BCD e armazenando na memória")
+            valor = self.registers[x]
+            self.memory.write_byte(self.index_register, valor // 100)       # Centena
+            self.memory.write_byte(self.index_register + 1, (valor // 10) % 10)  # Dezena
+            self.memory.write_byte(self.index_register + 2, valor % 10)     # Unidade
 
 
         elif first_nibble == 0x2:  # CALL addr - Chama subrotina
@@ -187,8 +193,9 @@ if __name__ == "__main__":
     #chip8.memory.select_rom('res/rom/test_opcode.ch8')
 
     #chip8.memory.select_rom('res/rom/BC_test.ch8')
-    chip8.memory.select_rom('res/rom/CAVE')
+    #chip8.memory.select_rom('res/rom/CAVE')
 
-    chip8.memory.dump_memory(0x200, 0x1000)
+    #chip8.memory.select_rom('res/rom/ibm-logo.ch8')
+    #chip8.memory.dump_memory(0x200, 0x1000)
     
     chip8.run()
