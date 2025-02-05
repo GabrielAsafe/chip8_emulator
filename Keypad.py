@@ -13,16 +13,24 @@ class Keypad:
             sdl2.SDLK_z: 0xA, sdl2.SDLK_x: 0x0, sdl2.SDLK_c: 0xB, sdl2.SDLK_v: 0xF
         }
 
-    def handle_event(self, event):
-        """Lida com eventos de teclado do SDL2."""
-        if event.type == sdl2.SDL_KEYDOWN:
-            if event.key.keysym.sym in self.keymap:
-                self.keys[self.keymap[event.key.keysym.sym]] = 1  # Pressionada
-
-        elif event.type == sdl2.SDL_KEYUP:
-            if event.key.keysym.sym in self.keymap:
-                self.keys[self.keymap[event.key.keysym.sym]] = 0  # Solta
+    def update_key_state(self, key_code, state):
+        """Atualiza o estado de uma tecla (pressionada ou solta)."""
+        if key_code in self.keymap:
+            key = self.keymap[key_code]
+            self.keys[key] = 1 if state else 0
 
     def is_key_pressed(self, chip8_key):
         """Retorna True se a tecla correspondente do CHIP-8 estiver pressionada."""
         return self.keys[chip8_key] == 1
+
+
+    def wait_for_key_press(self):
+        """Espera até que uma tecla seja pressionada e retorna o código da tecla."""
+        while True:
+            for event in sdl2.ext.get_events():
+                if event.type == sdl2.SDL_QUIT:
+                    self.running = False  # Handle window close event
+                if event.type == sdl2.SDL_KEYDOWN:
+                    key = event.key.keysym.sym
+                    if key in self.keymap:
+                        return self.keymap[key]  # Return the mapped key
