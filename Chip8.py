@@ -18,7 +18,7 @@ class Chip8:
         self.timers = Timers()  # Classe de timers
         self.running = True  # Indicador de execução
         self.waiting_for_key = False  # Controle para espera de tecla
-        self.display = Chip8Display(scale=10)
+        self.display = Chip8Display(scale=15)
 
 
     def fetch_opcode(self):
@@ -38,99 +38,131 @@ class Chip8:
         nn = opcode & 0x00FF
         nnn = opcode & 0x0FFF
 
+        print(f"Decodificando opcode: {hex(opcode)}")
+        print(f"first_nibble: {first_nibble}, x: {x}, y: {y}, n: {n}, nn: {nn}, nnn: {nnn}")
+        
         if opcode == 0x00E0:  # CLS - Limpa a tela
+            print("Executando CLS - Limpa a tela")
             self.display.clear()
         elif opcode == 0x00EE:  # RET - Retorna da subrotina
+            print("Executando RET - Retorna da subrotina")
             self.pc = self.stack.pop()
         elif first_nibble == 0x1:  # JP addr - Pula para NNN
-            self.pc = nnn
+            if self.pc == nnn:
+                print(f"Evitar salto para o mesmo endereço {hex(self.pc)}")
+                return  # Não fazer nada se o endereço de salto for o mesmo
+            print(f"Executando JP addr - Pula para {hex(nnn)}")
+            self.pc = nnn  # Atualiza o ponteiro do programa para o endereço nnn
+
+
+
+
         elif first_nibble == 0x2:  # CALL addr - Chama subrotina
-            self.stack.append(self.pc)
+            print(f"Executando CALL addr - Chama subrotina para {hex(nnn)}")
+            self.stack.push(self.pc)
             self.pc = nnn
         elif first_nibble == 0x3:  # SE Vx, NN - Pula se VX == NN
+            print(f"Executando SE Vx, NN - Comparando VX ({self.registers[x]}) com NN ({nn})")
             if self.registers[x] == nn:
                 self.pc += 2
         elif first_nibble == 0x4:  # SNE Vx, NN - Pula se VX != NN
+            print(f"Executando SNE Vx, NN - Comparando VX ({self.registers[x]}) com NN ({nn})")
             if self.registers[x] != nn:
                 self.pc += 2
-        elif first_nibble == 0x5 and n == 0:  # SE Vx, Vy - Pula se VX == VY
+            
+        elif first_nibble == 0x5 and n == 0x0:  # SE Vx, Vy - Pula se VX == VY
+            print(f"Executando SE Vx, Vy - Comparando VX ({self.registers[x]}) com VY ({self.registers[y]})")
             if self.registers[x] == self.registers[y]:
-                self.pc += 2
+                self.pc += 2  # Avança apenas se os valores forem iguais
+
+
         elif first_nibble == 0x6:  # LD Vx, NN - Atribui NN para VX
+            print(f"Executando LD Vx, NN - Atribuindo {nn} para VX")
             self.registers[x] = nn
         elif first_nibble == 0x7:  # ADD Vx, NN - Soma NN a VX
+            print(f"Executando ADD Vx, NN - Somando {nn} a VX ({self.registers[x]})")
             self.registers[x] = (self.registers[x] + nn) & 0xFF
         elif first_nibble == 0x8:
             if n == 0x0:  # LD Vx, Vy - VX := VY
+                print(f"Executando LD Vx, Vy - Atribuindo VX ({self.registers[x]}) a VY ({self.registers[y]})")
                 self.registers[x] = self.registers[y]
             elif n == 0x1:  # OR Vx, Vy - VX := VX OR VY
+                print(f"Executando OR Vx, Vy - OR entre VX ({self.registers[x]}) e VY ({self.registers[y]})")
                 self.registers[x] |= self.registers[y]
             elif n == 0x2:  # AND Vx, Vy - VX := VX AND VY
+                print(f"Executando AND Vx, Vy - AND entre VX ({self.registers[x]}) e VY ({self.registers[y]})")
                 self.registers[x] &= self.registers[y]
             elif n == 0x3:  # XOR Vx, Vy - VX := VX XOR VY
+                print(f"Executando XOR Vx, Vy - XOR entre VX ({self.registers[x]}) e VY ({self.registers[y]})")
                 self.registers[x] ^= self.registers[y]
             elif n == 0x4:  # ADD Vx, Vy - VX := VX + VY, VF := Carry
                 sum_val = self.registers[x] + self.registers[y]
+                print(f"Executando ADD Vx, Vy - Somando VX ({self.registers[x]}) e VY ({self.registers[y]})")
                 self.registers[0xF] = 1 if sum_val > 255 else 0
                 self.registers[x] = sum_val & 0xFF
-            elif n == 0x5:  # SUB Vx, Vy - VX := VX - VY, VF := Not Borrow
+            
+            elif n == 0x5:  # SUB Vx, Vy - VX := VX - VY, VF := Não houve empréstimo
+                print(f"Executando SUB Vx, Vy - Subtraindo VX ({self.registers[x]}) de VY ({self.registers[y]})")
                 self.registers[0xF] = 1 if self.registers[x] > self.registers[y] else 0
                 self.registers[x] = (self.registers[x] - self.registers[y]) & 0xFF
+            
             elif n == 0x6:  # SHR Vx - VX := VX >> 1, VF := Bit Menos Significativo
+                print(f"Executando SHR Vx - Deslocando VX ({self.registers[x]}) para a direita")
                 self.registers[0xF] = self.registers[x] & 0x1
                 self.registers[x] >>= 1
             elif n == 0x7:  # SUBN Vx, Vy - VX := VY - VX, VF := Not Borrow
+                print(f"Executando SUBN Vx, Vy - Subtraindo VY ({self.registers[y]}) de VX ({self.registers[x]})")
                 self.registers[0xF] = 1 if self.registers[y] > self.registers[x] else 0
                 self.registers[x] = (self.registers[y] - self.registers[x]) & 0xFF
-            elif n == 0xE:  # SHL Vx - VX := VX << 1, VF := Bit Mais Significativo
+            elif n == 0xE:  # SHL Vx - VX := VX << 1, VF := MSB de VX antes do shift
+                print(f"Executando SHL Vx - Deslocando VX ({self.registers[x]}) para a esquerda")
                 self.registers[0xF] = (self.registers[x] >> 7) & 0x1
                 self.registers[x] = (self.registers[x] << 1) & 0xFF
+
         elif first_nibble == 0x9 and n == 0x0:  # SNE Vx, Vy - Pula se VX != VY
+            print(f"Executando SNE Vx, Vy - Comparando VX ({self.registers[x]}) com VY ({self.registers[y]})")
             if self.registers[x] != self.registers[y]:
                 self.pc += 2
-        elif first_nibble == 0x1:  # JP addr - Pula para NNN
-            self.pc = nnn
-
-        elif first_nibble == 0x6:  # LD Vx, NN - Atribui NN para VX
-            self.registers[x] = nn
-
-        elif first_nibble == 0x7:  # ADD Vx, NN - Soma NN a VX
-            self.registers[x] = (self.registers[x] + nn) & 0xFF  # Garante overflow de 8 bits
 
         elif first_nibble == 0xA:  # LD I, addr - I := NNN
+            print(f"Executando LD I, addr - Atribuindo {hex(nnn)} a I")
             self.index_register = nnn
-
+        elif first_nibble == 0xB:  # JP V0, addr - PC := NNN + V0
+            print(f"Executando JP V0, addr - Pula para {hex(nnn + self.registers[0])}")
+            self.pc = nnn + self.registers[0]
+        elif first_nibble == 0xC:  # RND Vx, NN - VX := Rand() & NN
+            print(f"Executando RND Vx, NN - Gerando número aleatório e fazendo AND com {nn}")
+            self.registers[x] = random.randint(0, 255) & nn
         elif first_nibble == 0xD:  # DRW Vx, Vy, N - Desenha sprite
+            print(f"Executando DRW Vx, Vy, N - Desenhando sprite a partir de I com N={n}")
             sprite = self.memory.read_memory(self.index_register, n)
             collision = self.display.draw_sprite(self.registers[x], self.registers[y], sprite)
             self.registers[0xF] = 1 if collision else 0  # VF = 1 se houve colisão, senão 0
 
-
-        elif first_nibble == 0xA:  # LD I, addr - I := NNN
-            self.index_register = nnn
-        elif first_nibble == 0xB:  # JP V0, addr - PC := NNN + V0
-            self.pc = nnn + self.registers[0]
-        elif first_nibble == 0xC:  # RND Vx, NN - VX := Rand() & NN
-            self.registers[x] = random.randint(0, 255) & nn
-        elif first_nibble == 0xD:  # DRW Vx, Vy, N - Desenha sprite
-            self.display.draw_sprite(self.registers[x], self.registers[y], self.memory.memory[self.index_register:self.index_register + n])
         elif first_nibble == 0xF:
             if nn == 0x07:  # FX07 - VX := Delay Timer
+                print(f"Executando FX07 - Atribuindo o valor do Delay Timer ({self.delay_timer}) a VX")
                 self.registers[x] = self.delay_timer
             elif nn == 0x15:  # FX15 - Delay Timer := VX
+                print(f"Executando FX15 - Atribuindo o valor de VX ({self.registers[x]}) ao Delay Timer")
                 self.delay_timer = self.registers[x]
             elif nn == 0x1E:  # FX1E - I := I + VX
+                print(f"Executando FX1E - Incrementando I com o valor de VX ({self.registers[x]})")
                 self.index_register += self.registers[x]
             elif nn == 0x29:  # FX29 - I := Localização do dígito de VX
+                print(f"Executando FX29 - Definindo I para o dígito de VX ({self.registers[x]})")
                 self.index_register = self.registers[x] * 5
             elif nn == 0x55:  # FX55 - Armazena V0..VX na memória a partir de I
+                print(f"Executando FX55 - Armazenando V0..VX na memória a partir de I")
                 for i in range(x + 1):
                     self.memory.write_byte(self.index_register + i, self.registers[i])
             elif nn == 0x65:  # FX65 - Lê V0..VX da memória a partir de I
+                print(f"Executando FX65 - Lendo V0..VX da memória a partir de I")
                 for i in range(x + 1):
                     self.registers[i] = self.memory.read_byte(self.index_register + i)
+
         else:
-            print(f"Opcode não implementado: {hex(opcode)}")
+                print(f"Opcode não implementado: {hex(opcode)}")
 
     def run(self):
         while self.running:
@@ -152,7 +184,10 @@ class Chip8:
 if __name__ == "__main__":
     chip8 = Chip8()
 
-    chip8.memory.select_rom('res/rom/BC_test.ch8')
+    #chip8.memory.select_rom('res/rom/test_opcode.ch8')
+
+    #chip8.memory.select_rom('res/rom/BC_test.ch8')
+    chip8.memory.select_rom('res/rom/CAVE')
 
     chip8.memory.dump_memory(0x200, 0x1000)
     
