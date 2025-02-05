@@ -1,0 +1,6 @@
+https://en.wikipedia.org/wiki/CHIP-8
+https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
+https://github.com/Baekalfen/PyBoy/blob/master/extras/PyBoy.pdf
+https://gbdev.io/resources.html#emulator-development
+https://github.com/shamblesides/apu
+https://github.com/loktar00/chip8
