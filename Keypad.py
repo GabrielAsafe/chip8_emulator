@@ -1,4 +1,5 @@
 import sdl2
+import time
 
 class Keypad:
     def __init__(self):
@@ -18,19 +19,22 @@ class Keypad:
         if key_code in self.keymap:
             key = self.keymap[key_code]
             self.keys[key] = 1 if state else 0
+            print(f"Tecla {key_code} ({key}) {'pressionada' if state else 'solta'} - Estado atual: {self.keys}")
 
     def is_key_pressed(self, chip8_key):
         """Retorna True se a tecla correspondente do CHIP-8 estiver pressionada."""
         return self.keys[chip8_key] == 1
 
-
     def wait_for_key_press(self):
         """Espera até que uma tecla seja pressionada e retorna o código da tecla."""
+        print("Aguardando tecla...")  # DEBUG
         while True:
             for event in sdl2.ext.get_events():
                 if event.type == sdl2.SDL_QUIT:
-                    self.running = False  # Handle window close event
+                    return None  # Permite sair do loop se fechar a janela
                 if event.type == sdl2.SDL_KEYDOWN:
                     key = event.key.keysym.sym
                     if key in self.keymap:
-                        return self.keymap[key]  # Return the mapped key
+                        print(f"Tecla pressionada: {key} -> {self.keymap[key]}")  # DEBUG
+                        return self.keymap[key]  # Retorna o código da tecla CHIP-8
+            time.sleep(0.01)  # Pequena pausa para evitar alto consumo de CPU

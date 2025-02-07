@@ -145,6 +145,20 @@ class Chip8:
             sprite = self.memory.read_memory(self.index_register, n)
             collision = self.display.draw_sprite(self.registers[x], self.registers[y], sprite)
             self.registers[0xF] = 1 if collision else 0  # VF = 1 se houve colisão, senão 0
+        
+        elif first_nibble == 0xE0:
+                if opcode == 0xE09E:  # EX9E - Skip if key is pressed
+                    print(f"Executando 0xE09E - Lendo V0..VX da memória a partir de I")
+                    key = self.registers[x]  # Key stored in Vx
+                    if self.keypad.is_key_pressed(key):  # Check if key is pressed
+                        self.pc += 2  # Skip the next instruction
+
+                elif opcode == 0xE0A1:  # EXA1 - Skip if key is not pressed
+                    print(f"Executando 0xE0A1 - Lendo V0..VX da memória a partir de I")
+                    key = self.registers[x]  # Key stored in Vx
+                    if not self.keypad.is_key_pressed(key):  # Check if key is not pressed
+                        self.pc += 2  # Skip the next instruction
+
 
         elif first_nibble == 0xF:
             if nn == 0x07:  # FX07 - VX := Delay Timer
@@ -168,21 +182,15 @@ class Chip8:
                 for i in range(x + 1):
                     self.registers[i] = self.memory.read_byte(self.index_register + i)
 
-            elif opcode == 0xE09E:  # EX9E - Skip if key is pressed
-                key = self.registers[x]  # Key stored in Vx
-                if self.keypad.is_key_pressed(key):  # Check if key is pressed
-                    self.pc += 2  # Skip the next instruction
-
-            elif opcode == 0xE0A1:  # EXA1 - Skip if key is not pressed
-                key = self.registers[x]  # Key stored in Vx
-                if not self.keypad.is_key_pressed(key):  # Check if key is not pressed
-                    self.pc += 2  # Skip the next instruction
-
-
             elif opcode == 0xF00A:  # FX0A - Wait for key press
+                print(f"Executando 0xF00A - Lendo V0..VX da memória a partir de I")
                 key = self.keypad.wait_for_key_press()  # Block and wait for key press
                 self.registers[x] = key  # Store the key value in Vx
                 # No PC increment here since it's waiting for key input
+        elif opcode & 0xF0FF == 0xE09E:  # EX9E - Skip if key in VX is pressed
+            x = (opcode & 0x0F00) >> 8   # Extrai o registrador X
+            if self.keypad.is_key_pressed(self.registers[x]):  # Verifica se a tecla está pressionada
+                self.pc += 2  # Pula a próxima instrução
 
         else:
                 print(f"Opcode não implementado: {hex(opcode)}")
@@ -192,7 +200,6 @@ class Chip8:
             opcode = self.fetch_opcode()  # Busca o próximo opcode
             self.decode_execute(opcode)  # Decodifica e executa a instrução
             self.display.render()  # Atualiza a tela
-            
             self.handle_events()  # Lida com eventos (ex: janela fechando)
             time.sleep(1/700)  # Aproximadamente 700 instruções por segundo
 
@@ -205,11 +212,11 @@ class Chip8:
 
             if event.type == sdl2.SDL_KEYDOWN:
                 if event.key.keysym.sym in self.keypad.keymap:
-                    print(f"Key {event.key.keysym.sym} pressed")
+                    #print(f"Key {event.key.keysym.sym} pressed")
                     self.keypad.update_key_state(event.key.keysym.sym, True)  # Key pressed
             elif event.type == sdl2.SDL_KEYUP:
                 if event.key.keysym.sym in self.keypad.keymap:
-                    print(f"Key {event.key.keysym.sym} released")
+                    #print(f"Key {event.key.keysym.sym} released")
                     self.keypad.update_key_state(event.key.keysym.sym, False)  # Key released
 
 
@@ -222,12 +229,12 @@ if __name__ == "__main__":
     chip8 = Chip8()
 
     #chip8.memory.select_rom('res/rom/test_opcode.ch8')
-
     #chip8.memory.select_rom('res/rom/BC_test.ch8')
+    #chip8.memory.select_rom('res/rom/Keypad Test [Hap, 2006].ch8')
     
-
     #chip8.memory.select_rom('res/rom/ibm-logo.ch8')
     #chip8.memory.dump_memory(0x200, 0x1000)
+
     
 
     #chip8.memory.select_rom('res/rom/CAVE')
