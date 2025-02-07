@@ -230,7 +230,7 @@ if __name__ == "__main__":
 
     #chip8.memory.select_rom('res/rom/test_opcode.ch8')
     #chip8.memory.select_rom('res/rom/BC_test.ch8')
-    #chip8.memory.select_rom('res/rom/Keypad Test [Hap, 2006].ch8')
+    chip8.memory.select_rom('res/rom/Keypad Test [Hap, 2006].ch8')
     
     #chip8.memory.select_rom('res/rom/ibm-logo.ch8')
     #chip8.memory.dump_memory(0x200, 0x1000)
@@ -238,7 +238,7 @@ if __name__ == "__main__":
     
 
     #chip8.memory.select_rom('res/rom/CAVE')
-    chip8.memory.select_rom('res/rom/PONG')
+    #chip8.memory.select_rom('res/rom/PONG')
     #chip8.memory.select_rom('res/rom/TANK')
     #chip8.memory.select_rom('res/rom/TETRIS')
 
